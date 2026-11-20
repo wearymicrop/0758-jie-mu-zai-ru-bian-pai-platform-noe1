@@ -1,5 +1,5 @@
 import {curtain} from './curtain.js';
-import {describe, escape, heading, interval, table} from './tickets.js';
+import {describe, escape, heading, interval, table, time} from './tickets.js';
 
 const $ = selector => document.querySelector(selector);
 const links = [...document.querySelectorAll('nav a')];
@@ -13,9 +13,17 @@ async function request(path, body) {
   return data;
 }
 
-function archivePanel() {
-  if (!state.archive) return '<p>确认归档后可下载执行清单</p>';
-  return `<div class="archived"><small>批次编号</small><code>${escape(state.archive.id)}</code><button id="rerun">复跑核验</button><a class="file" href="/api/runs/${state.archive.id}/export">下载执行证据</a></div>`;
+function releasePanel(d) {
+  const gate = d.release;
+  const verdict = gate.publishable
+    ? '<p class="ok-text">占用对账一致，具备发布条件</p>'
+    : `<p class="bad-text">未达发布条件</p><ul>${gate.blocks.map(b=>`<li>${escape(describe(b.code))}：${escape(b.related.join('、'))}</li>`).join('')}</ul>`;
+  if (!state.archive) return verdict + '<p>确认归档后可正式发布执行单</p>';
+  const pub = state.archive.publication;
+  const action = pub
+    ? `<p class="ok-text">已于 ${escape(pub.published_at)} 正式发布</p>`
+    : (gate.publishable ? '<button id="publish" class="primary">正式发布执行单</button>' : '<p>排除阻塞后方可发布</p>');
+  return verdict + `<div class="archived"><small>批次编号</small><code>${escape(state.archive.id)}</code><button id="rerun">复跑核验</button>${action}<a class="file" href="/api/runs/${state.archive.id}/export">下载执行证据</a></div>`;
 }
 
 function sections(view, data) {
@@ -26,7 +34,11 @@ function sections(view, data) {
     case 'calendars': return [heading('技师可开工')+table(['技师','工种','有效窗口'],Object.entries(d.technicians).map(([key,t])=>[t.name,t.role,d.effective_tech[key].map(interval).join(' / ')])),heading('剧场窗口')+table(['工位','有效窗口'],Object.entries(d.effective_stages).map(([k,v])=>[k,v.map(interval).join(' / ')]))];
     case 'conflicts': return [heading('预约冲突')+table(['资源','冲突预约','重叠段'],d.overlaps.map(h=>[h.resource,`${h.left} / ${h.right}`,interval([h.start,h.end])] )),heading('无效预约')+table(['源序号','预约','原因'],d.issues.map(h=>[h.source_index,h.id,describe(h.code)]))];
     case 'reconcile': return [heading('截止偏差')+table(['工单','源行','超时分钟'],d.late.map(r=>[r.id,r.line,r.minutes])),heading('守恒核验')+table(['核验项','差异'],[['输入行数差',d.row_gap],['排程碰撞',d.collisions.length],['前置违序',d.premature.length],['预约重叠',d.hold_clashes]])];
-    case 'dispatch': return [heading('执行顺序')+table(['工位','工单','技师','开工时段'],d.stages.flatMap(s=>s.steps.map(j=>[s.stage,`${j.id} · ${j.title}`,j.technician,interval([j.start,j.end])]))),heading('归档凭证')+archivePanel()];
+    case 'dispatch': return [
+      heading('执行顺序')+table(['落位','工位','工单','技师','作业时段','清场至'],d.stages.flatMap(s=>s.steps.map(j=>[j.seq,s.stage,`${j.id} · ${j.title}`,j.technician,interval([j.start,j.end]),time(j.stage_end)]))),
+      heading('换场空档')+table(['工位','场次衔接','清场完成','后场开工','空档分钟','技师交接'],d.changeovers.map(c=>[c.stage,`${c.from_show} → ${c.to_show}`,time(c.clear_end),time(c.next_start),c.gap,`${c.last.technician} → ${c.next.technician}${c.continuous?'（连场）':''}`])),
+      heading('被推迟工序')+table(['工单','工序','推迟原因','关联证据'],d.deferred.map(j=>[j.id,j.title,describe(j.code),j.related.join('、')])),
+      heading('归档与发布')+releasePanel(d)];
     default: return curtain(data,state);
   }
 }
@@ -52,7 +64,7 @@ async function load() {
     const data = await request(`/api/samples/${sample}`);
     if (token !== state.request) return;
     Object.assign(state,{data,archive:null,sample,job:'',stage:''});
-    render(); show(data.reconcile.status==='MATCHED' ? '工单与资源已对平' : '有待复核的勾稽差异');
+    render(); show(data.reconcile.status==='MATCHED' ? (data.dispatch.release.publishable ? '工单与资源已对平，执行单可发布' : '占用对账一致，但未达发布条件') : '有待复核的勾稽差异');
   } catch (error) { if (token===state.request) show(error.message); }
 }
 
@@ -83,6 +95,13 @@ document.addEventListener('click',async event=>{
   if (btn?.id==='rerun' && state.archive) {
     try { await request(`/api/runs/${state.archive.id}/rerun`,{}); show('复跑一致'); }
     catch (error) { show(error.message); }
+  }
+  if (btn?.id==='publish' && state.archive) {
+    try {
+      const record = await request(`/api/runs/${state.archive.id}/publish`,{});
+      state.archive = record; render();
+      show(record.reused ? '同一执行单已发布，未重复生成' : '执行单已正式发布');
+    } catch (error) { show(error.message); }
   }
 });
 window.addEventListener('hashchange',render);

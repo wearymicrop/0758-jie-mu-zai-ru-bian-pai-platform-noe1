@@ -10,6 +10,7 @@ def plan(orders, dependencies, calendar, conflicts):
     holds = defaultdict(list, {key: list(rows) for key, rows in conflicts["holds"].items()})
     uncertain = invalid_resources(conflicts)
     states = {key: {**indexed[key], **issue, "status": "isolated"} for key, issue in blocked.items()}
+    sequence = 0
     for key in dependencies["order"]:
         if key in blocked:
             continue
@@ -23,10 +24,11 @@ def plan(orders, dependencies, calendar, conflicts):
         slot, code, related = search(job, calendar, holds, release, uncertain)
         state = {**job, "status": "pending", "code": code, "related": related, "ready": release}
         if slot:
+            sequence += 1
             start, tech = slot
             end = start + job["duration"]
             stage_end = end + job["reset"]
-            state.update(status="scheduled", start=start, end=end, tech=tech, stage_end=stage_end)
+            state.update(status="scheduled", start=start, end=end, tech=tech, stage_end=stage_end, seq=sequence)
             holds['stage:' + job["stage"]].append({"id": key, "start": start, "end": stage_end})
             holds['tech:' + tech].append({"id": key, "start": start, "end": end})
         states[key] = state

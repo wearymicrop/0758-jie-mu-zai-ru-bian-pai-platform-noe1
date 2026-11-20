@@ -14,7 +14,7 @@
 | M4 工位冲突 | 定位重叠预约与未知资源 | `GET /api/samples/{sample}/conflicts` | `app/modules/conflicts/occupancy.py` | `tests/test_conflicts.py` |
 | M5 转场排程 | 按工种、工位和预约找空段 | `GET /api/samples/{sample}/schedule` | `app/modules/schedule/planner.py` | `tests/test_schedule.py` |
 | M6 超时勾稽 | 复核工单覆盖及资源碰撞 | `GET /api/samples/{sample}/reconcile` | `app/modules/reconcile/audit.py` | `tests/test_reconcile.py` |
-| M7 执行清单 | 归档各工位执行顺序 | `GET /api/samples/{sample}/dispatch` | `app/modules/dispatch/checklist.py` | `tests/test_dispatch.py` |
+| M7 执行清单 | 归档执行顺序、换场空档与发布门槛 | `GET /api/samples/{sample}/dispatch` | `app/modules/dispatch/checklist.py` | `tests/test_dispatch.py` |
 
 ## 陷阱登记
 
@@ -36,3 +36,11 @@
 - 输入行 = 已落位 + 待排 + 隔离工单 + 源隔离 + 重传 + 空行。
 - 复核同工位、同技师、预约、前置顺序及两侧键集合。超时在已落位内单列。
 - 技师的选择按最早可用、技师号决定。固定预约交叠与排程碰撞分别计数。
+
+## 换场执行单
+
+- 落位序号 `seq` 按依赖拓扑、优先级、截止、工单号的裁决顺序编号，执行单按工位以开工时刻展开。
+- 同一工位连续同场次工序为一段。前场段最大 `stage_end`（作业加清场）为舞台占用终点，后场首工序开工为装台起点，差值是换场空档；边界两工序的技师构成技师交接，同人记为连场。
+- 未落位工序带原因码与关联证据留在执行单被推迟栏。
+- 发布门槛与执行单同一次计算、同一版占用对账：无待排工序（尤其无带下游依赖的关键拆景）且勾稽 `MATCHED`（零碰撞、零违序、守恒）才可正式发布。
+- 发布按批次号幂等落档，重复发布或同输入重跑不重复生成执行单。

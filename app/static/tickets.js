@@ -1,7 +1,7 @@
 export const escape = (value) => String(value ?? '—').replace(/[&<>"']/g, token => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[token]));
 export const time = (minute) => minute == null ? '—' : `${minute >= 1440 ? '+1 ' : ''}${String(Math.floor(minute % 1440 / 60)).padStart(2,'0')}:${String(minute % 60).padStart(2,'0')}`;
 export const interval = ([start, end]) => `${time(start)}–${time(end)}`;
-const reason = {PLACED:'已落位', NO_WINDOW:'没有共同开工窗口', RESOURCE_FULL:'窗口内资源已占满', DEPENDENCY_BLOCKED:'前置工序未落位', DEPENDENCY_CYCLE:'工序成环', MISSING_DEPENDENCY:'缺失前置工单', UNKNOWN_STAGE:'未知工位', UNKNOWN_ROLE:'未知工种', HOLD_UNCERTAIN:'资源预约待核实', INVALID_HOLD:'无效预约', ACCEPTED:'已采信', BAD_ORDER:'工单字段异常', DUPLICATE_CONFLICT:'同号工单冲突', DUPLICATE_REPLAY:'同号重传', BAD_JSON:'记录截断或无效', EMPTY_ROW:'空行'};
+const reason = {PLACED:'已落位', NO_WINDOW:'没有共同开工窗口', RESOURCE_FULL:'窗口内资源已占满', DEPENDENCY_BLOCKED:'前置工序未落位', DEPENDENCY_CYCLE:'工序成环', MISSING_DEPENDENCY:'缺失前置工单', UNKNOWN_STAGE:'未知工位', UNKNOWN_ROLE:'未知工种', HOLD_UNCERTAIN:'资源预约待核实', INVALID_HOLD:'无效预约', ACCEPTED:'已采信', BAD_ORDER:'工单字段异常', DUPLICATE_CONFLICT:'同号工单冲突', DUPLICATE_REPLAY:'同号重传', BAD_JSON:'记录截断或无效', EMPTY_ROW:'空行', KEY_TEARDOWN_PENDING:'关键拆景未落位', PENDING_JOBS:'工序未落位', RESOURCE_COLLISION:'资源碰撞未清', DEPENDENCY_VIOLATION:'前置工序违序', RECONCILE_MISMATCH:'占用对账不符'};
 export const describe = code => reason[code] || code;
 export const heading = (title, control = '') => `<div class="panel-head"><h2>${title}</h2>${control}</div>`;
 export function table(labels, rows) {

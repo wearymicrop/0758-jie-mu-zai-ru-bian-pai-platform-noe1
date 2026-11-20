@@ -23,3 +23,11 @@ UTF-8，支持文件头 BOM。每个物理行一个对象，行号从 1 开始�
 ## 输出和证据
 
 输入物理行在采信、重传、空行或源隔离中唯一归类。每条采信工单在 `scheduled`、`pending` 或 `isolated` 中唯一归类。`line` 是工单行号，`source_index` 是日历预约项位置，`related` 保存环成员、前置工单、预约号或资源键。超时按作业完工减截止计算。清场时间仅占用舞台。原有预约重叠单独报告。归档保存完整输入与计算结果，摘要按稳定 JSON 和规则版本计算。
+
+## 换场执行单
+
+- `seq` 是落位序号，按裁决顺序从 1 编号，仅已落位工序持有。
+- `changeovers` 记录每次换场：`stage`、前后场次 `from_show`/`to_show`、边界工序 `last`/`next`、清场完成 `clear_end`、后场开工 `next_start`、空档分钟 `gap`，以及边界同工种的 `continuous` 连场标记。
+- `deferred` 保存未落位工序的 `id`、`title`、`line`、`status`、原因码 `code` 与关联证据 `related`。
+- `release.publishable` 为真才可正式发布；`release.blocks` 逐项列出阻塞：`KEY_TEARDOWN_PENDING`（带下游依赖的关键拆景未落位）、`PENDING_JOBS`（其余工序未落位）、`RESOURCE_COLLISION`（资源碰撞）、`DEPENDENCY_VIOLATION`（前置违序）、`RECONCILE_MISMATCH`（占用对账守恒不符）。
+- 发布成功后批次携带 `publication`：`published_at`（UTC 时刻）、`rule_version` 与输入摘要 `digest`。同一批次重复发布返回原印记，不重复生成。

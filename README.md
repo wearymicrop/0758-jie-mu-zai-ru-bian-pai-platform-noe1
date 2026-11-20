@@ -14,14 +14,14 @@ docker compose up --build
 
 1. 打开「转场排程」，选择「冲突场次」。点选 `A01` 查阅跳过预约 `H01`、`H04` 的工序票签，再选 `X05` 查看夜间待排依据。
 2. 在「超时勾稽」核对 15 道已落位、3 道待排、6 道工单隔离。`A03` 超时 15 分钟，新排工序资源碰撞为零。
-3. 确认归档后打开「执行清单」，可复跑核验或下载包含输入摘要、执行步骤和隔离证据的联单。
+3. 确认归档后打开「执行清单」，核对落位顺序、换场空档与被推迟工序；满足发布门槛时可正式发布，可复跑核验或下载包含输入摘要、执行步骤和隔离证据的联单。
 4. 自带工单可展开「试排自备工单」，粘贴逐行工单与日历 JSON。样例位于 `sample_data/`，字段见 [数据字典](docs/DATA-DICTIONARY.md)。
 
 ## 接口
 
 - `GET /api/health` 检查存储连通性。
 - `GET /api/samples/clean` 和 `GET /api/samples/dirty` 返回计算结果。七个子路径分别是 `orders`、`dependencies`、`calendars`、`conflicts`、`schedule`、`reconcile`、`dispatch`。排程支持 `?job=A01`。
-- `POST /api/runs` 接收 `{"sample":"dirty"}` 或 `{"orders":"逐行文本","calendar":{...}}`。`GET /api/runs/{id}` 读取归档，`POST /api/runs/{id}/rerun` 复算比对，`GET /api/runs/{id}/export` 下载证据。
+- `POST /api/runs` 接收 `{"sample":"dirty"}` 或 `{"orders":"逐行文本","calendar":{...}}`。`GET /api/runs/{id}` 读取归档，`POST /api/runs/{id}/rerun` 复算比对，`POST /api/runs/{id}/publish` 在发布门槛满足时正式发布（幂等），`GET /api/runs/{id}/export` 下载证据。
 
 ## 排程边界
 

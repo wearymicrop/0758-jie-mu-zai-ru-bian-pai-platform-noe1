@@ -16,6 +16,7 @@
 .ticket.bad { border-left-color:var(--bad); }
 .ticket p { overflow-wrap:anywhere; }
 .bad-text { color:var(--bad); }
+.ok-text { color:var(--gold); }
 .ticket-list { display:grid; gap:6px; max-height:249px; overflow:auto; }
 .ticket-list button { text-align:left; padding:6px 9px; }
 .ticket-list button[aria-pressed='true'] { border-color:var(--gold); }

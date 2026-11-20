@@ -3,7 +3,7 @@ from fastapi import APIRouter, Response
 from app.manifest import canonical
 from app.store import fetch
 from app.sources import choose_source
-from app.modules.dispatch.archive import create, rerun
+from app.modules.dispatch.archive import create, present, release, rerun
 
 from app.preview import preview
 
@@ -23,7 +23,7 @@ def submit(payload: dict):
 
 @router.get("/api/runs/{run_id}")
 def saved(run_id: str):
-    return fetch(run_id)[1]
+    return present(fetch(run_id)[1])
 
 
 @router.post("/api/runs/{run_id}/rerun")
@@ -31,10 +31,15 @@ def verify(run_id: str):
     return rerun(run_id)
 
 
+@router.post("/api/runs/{run_id}/publish")
+def publish(run_id: str):
+    return release(run_id)
+
+
 @router.get("/api/runs/{run_id}/export")
 def export(run_id: str):
     _, run = fetch(run_id)
-    return Response(canonical(run), media_type="application/json", headers={
+    return Response(canonical(present(run)), media_type="application/json", headers={
         "Content-Disposition": f'attachment; filename="dispatch-{run_id}.json"',
         "Cache-Control": "no-store",
     })

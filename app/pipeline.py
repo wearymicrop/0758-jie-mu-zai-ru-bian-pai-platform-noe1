@@ -15,6 +15,7 @@ def process(source):
     conflicts = audit_holds(calendar)
     conflicts["order_issues"] = order_issues(orders["orders"], calendar)
     schedule = plan(orders["orders"], dependencies, calendar, conflicts)
+    audit = reconcile(orders, schedule, conflicts)
     return {"orders": orders, "dependencies": dependencies, "calendars": calendar, "conflicts": conflicts,
-            "schedule": schedule, "reconcile": reconcile(orders, schedule, conflicts),
-            "dispatch": build(schedule, calendar)}
+            "schedule": schedule, "reconcile": audit,
+            "dispatch": build(schedule, calendar, audit)}
